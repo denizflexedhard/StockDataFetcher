@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Trade Bridge | Finansal Veri Dönüştürücü</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans min-h-screen flex items-center justify-center">
+
+    <div class="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-lg border border-gray-700">
+        <h1 class="text-3xl font-bold text-center text-blue-400 mb-2">AI Trade Bridge</h1>
+        <p class="text-center text-gray-400 mb-8 text-sm">Yapay Zeka (ChatGPT/Gemini) için kusursuz finansal JSON dosyaları oluşturun.</p>
+
+        <form id="dataForm" class="space-y-5">
+            <!-- Sembol -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Hisse Sembolü (Örn: AKBNK, THYAO)</label>
+                <input type="text" id="symbol" name="symbol" required placeholder="AKBNK"
+                    class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+            </div>
+
+            <!-- Zaman Dilimi -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Mum Periyodu</label>
+                <select id="timeframe" name="timeframe" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="1m">1 Dakika</option>
+                    <option value="5m" selected>5 Dakika</option>
+                    <option value="15m">15 Dakika</option>
+                    <option value="1h">1 Saat</option>
+                    <option value="1d">1 Gün</option>
+                </select>
+                <p class="text-xs text-gray-400 mt-2">
+                    <span class="font-semibold text-yellow-500">Geçmiş Veri Sınırları:</span><br>
+                    • <strong>1 Dakika:</strong> Sadece son 7 gün çekilebilir.<br>
+                    • <strong>5 & 15 Dakika:</strong> Sadece son 60 gün çekilebilir.<br>
+                    • <strong>1 Saat:</strong> Sadece son 730 gün çekilebilir.<br>
+                    • <strong>1 Gün:</strong> Sınır yoktur.
+                </p>
+            </div>
+
+            <div class="flex space-x-4">
+                <!-- Başlangıç Tarihi -->
+                <div class="w-1/2">
+                    <label class="block text-sm font-medium text-gray-300">Başlangıç Tarihi</label>
+                    <input type="date" id="start_date" name="start_date" required class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <!-- Bitiş Tarihi -->
+                <div class="w-1/2">
+                    <label class="block text-sm font-medium text-gray-300">Bitiş Tarihi</label>
+                    <input type="date" id="end_date" name="end_date" required class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <!-- İndikatörler -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Eklenecek İndikatörler</label>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="EMA9" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded" checked>
+                        <span class="ml-2 text-gray-300">EMA 9</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="EMA21" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded" checked>
+                        <span class="ml-2 text-gray-300">EMA 21</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="SMA50" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                        <span class="ml-2 text-gray-300">SMA 50</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="SMA200" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                        <span class="ml-2 text-gray-300">SMA 200</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="RSI" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded" checked>
+                        <span class="ml-2 text-gray-300">RSI (14)</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="MACD" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                        <span class="ml-2 text-gray-300">MACD</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="BBANDS" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                        <span class="ml-2 text-gray-300">Bollinger Bands</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="STOCH" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                        <span class="ml-2 text-gray-300">Stochastic</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="ATR" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                        <span class="ml-2 text-gray-300">ATR</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="ADX" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                        <span class="ml-2 text-gray-300">ADX</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="CCI" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                        <span class="ml-2 text-gray-300">CCI</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="OBV" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                        <span class="ml-2 text-gray-300">OBV</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Buton -->
+            <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition duration-200 shadow-lg mt-4">
+                JSON Dosyasını Hazırla ve İndir
+            </button>
+        </form>
+
+        <div id="statusMsg" class="mt-4 text-center text-sm hidden"></div>
+    </div>
+
+    <script>
+        // Set default dates
+        const today = new Date();
+        const pastWeek = new Date(today);
+        pastWeek.setDate(pastWeek.getDate() - 7);
+        
+        document.getElementById('end_date').value = today.toISOString().split('T')[0];
+        document.getElementById('start_date').value = pastWeek.toISOString().split('T')[0];
+
+        document.getElementById('dataForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submitBtn');
+            const statusMsg = document.getElementById('statusMsg');
+            
+            // UI Güncelleme (Yükleniyor)
+            btn.disabled = true;
+            btn.innerText = "Veriler Çekiliyor ve Hesaplanıyor...";
+            btn.classList.add("opacity-70");
+            statusMsg.classList.add("hidden");
+
+            // Seçili indikatörleri virgülle ayrılmış string yapma
+            const selectedIndicators = Array.from(document.querySelectorAll('.indicator-checkbox:checked'))
+                                            .map(cb => cb.value)
+                                            .join(',');
+
+            const formData = new FormData();
+            formData.append('symbol', document.getElementById('symbol').value);
+            formData.append('timeframe', document.getElementById('timeframe').value);
+            formData.append('start_date', document.getElementById('start_date').value);
+            formData.append('end_date', document.getElementById('end_date').value);
+            formData.append('indicators', selectedIndicators);
+
+            try {
+                const response = await fetch('/api/generate_json', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Blob oluştur ve dosyayı indir
+                    const jsonString = JSON.stringify(data, null, 2);
+                    const blob = new Blob([jsonString], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `AI_TradeData_${document.getElementById('symbol').value}_${document.getElementById('timeframe').value}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    statusMsg.innerText = "✅ Başarılı! Dosyanız indirildi. Artık yapay zekaya yükleyebilirsiniz.";
+                    statusMsg.className = "mt-4 text-center text-sm text-green-400 block";
+                } else {
+                    statusMsg.innerText = "❌ Hata: " + (data.hata || "Bilinmeyen bir hata oluştu.");
+                    statusMsg.className = "mt-4 text-center text-sm text-red-400 block";
+                }
+            } catch (error) {
+                statusMsg.innerText = "❌ Sunucu bağlantı hatası.";
+                statusMsg.className = "mt-4 text-center text-sm text-red-400 block";
+            } finally {
+                // UI Sıfırlama
+                btn.disabled = false;
+                btn.innerText = "JSON Dosyasını Hazırla ve İndir";
+                btn.classList.remove("opacity-70");
+            }
+        });
+    </script>
+</body>
+</html>
