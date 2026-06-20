@@ -49,10 +49,35 @@ async def generate_json(
     timeframe: str = Form(...),
     start_date: str = Form(...),
     end_date: str = Form(...),
-    indicators: str = Form(...) # Virgülle ayrılmış string (Örn: "EMA9,EMA21,RSI")
+    indicators: str = Form(...), # Virgülle ayrılmış string (Örn: "EMA9,EMA21,RSI")
+    exchange: str = Form(...)
 ):
     try:
-        # 1. İstek Logunu Veritabanına Kaydet
+        # Sembolü temizle ve büyük harf yap
+        symbol = symbol.strip().upper()
+
+        # 2. Seçilen borsaya göre sembol sonekini ayarla
+        if exchange == "bist":
+            if not symbol.endswith(".IS"):
+                symbol = f"{symbol}.IS"
+        elif exchange == "crypto":
+            if not symbol.endswith("-USD"):
+                symbol = f"{symbol}-USD"
+        elif exchange == "lse":
+            if not symbol.endswith(".L"):
+                symbol = f"{symbol}.L"
+        elif exchange == "xetra":
+            if not symbol.endswith(".DE"):
+                symbol = f"{symbol}.DE"
+        elif exchange == "tse":
+            if not symbol.endswith(".T"):
+                symbol = f"{symbol}.T"
+        elif exchange == "euronext":
+            if not symbol.endswith(".PA"):
+                symbol = f"{symbol}.PA"
+        # "us" durumunda herhangi bir sonek eklemiyoruz
+
+        # 1. İstek Logunu Veritabanına Kaydet (Sembolün nihai halini logluyoruz)
         client_ip = request.client.host
         conn = sqlite3.connect('ai_database.db')
         c = conn.cursor()
@@ -60,10 +85,6 @@ async def generate_json(
                   (client_ip, symbol, timeframe, datetime.now()))
         conn.commit()
         conn.close()
-
-        # 2. Yahoo Finance'den Veriyi Çek (BİST hisseleri için sonuna .IS eklemeyi unutma)
-        if not symbol.endswith(".IS") and not symbol.endswith("USD"):
-             symbol = f"{symbol}.IS" # BİST varsayılanı
 
         # Bitiş tarihine 1 gün ekliyoruz çünkü yfinance end parametresi hariç (exclusive) çalışır
         end_date_obj = datetime.strptime(end_date, "%Y-%m-%d") + pd.Timedelta(days=1)

@@ -13,9 +13,23 @@
         <p class="text-center text-gray-400 mb-8 text-sm">Yapay Zeka (ChatGPT/Gemini) için kusursuz finansal JSON dosyaları oluşturun.</p>
 
         <form id="dataForm" class="space-y-5">
+            <!-- Borsa Seçimi -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Borsa / Piyasa</label>
+                <select id="exchange" name="exchange" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="bist" selected>Borsa İstanbul (BIST)</option>
+                    <option value="us">ABD Borsaları (NASDAQ / NYSE)</option>
+                    <option value="crypto">Kripto Paralar (USD Bazlı)</option>
+                    <option value="lse">Londra Borsası (LSE)</option>
+                    <option value="xetra">Frankfurt Borsası (XETRA)</option>
+                    <option value="tse">Tokyo Borsası (TSE)</option>
+                    <option value="euronext">Paris Borsası (Euronext)</option>
+                </select>
+            </div>
+
             <!-- Sembol -->
             <div>
-                <label class="block text-sm font-medium text-gray-300">Hisse Sembolü (Örn: AKBNK, THYAO)</label>
+                <label id="symbolLabel" class="block text-sm font-medium text-gray-300">Hisse Sembolü (Örn: AKBNK, THYAO)</label>
                 <input type="text" id="symbol" name="symbol" required placeholder="AKBNK"
                     class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
             </div>
@@ -126,6 +140,27 @@
         document.getElementById('end_date').value = today.toISOString().split('T')[0];
         document.getElementById('start_date').value = pastWeek.toISOString().split('T')[0];
 
+        // Borsa seçimine göre sembol alanı etiket ve placeholder'ını dinamik güncelleme
+        const exchangeSelect = document.getElementById('exchange');
+        const symbolLabel = document.getElementById('symbolLabel');
+        const symbolInput = document.getElementById('symbol');
+
+        const exchangeConfig = {
+            bist: { label: 'Hisse Sembolü (Örn: AKBNK, THYAO)', placeholder: 'AKBNK' },
+            us: { label: 'Hisse Sembolü (Örn: AAPL, TSLA)', placeholder: 'AAPL' },
+            crypto: { label: 'Kripto Para Sembolü (Örn: BTC, ETH)', placeholder: 'BTC' },
+            lse: { label: 'Hisse Sembolü (Örn: BP, HSBA)', placeholder: 'BP' },
+            xetra: { label: 'Hisse Sembolü (Örn: SAP, SIE)', placeholder: 'SAP' },
+            tse: { label: 'Hisse Sembolü (Örn: 7203, 9984)', placeholder: '7203' },
+            euronext: { label: 'Hisse Sembolü (Örn: OR, MC)', placeholder: 'OR' }
+        };
+
+        exchangeSelect.addEventListener('change', (e) => {
+            const config = exchangeConfig[e.target.value] || exchangeConfig.bist;
+            symbolLabel.innerText = config.label;
+            symbolInput.placeholder = config.placeholder;
+        });
+
         document.getElementById('dataForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -144,6 +179,7 @@
                                             .join(',');
 
             const formData = new FormData();
+            formData.append('exchange', document.getElementById('exchange').value);
             formData.append('symbol', document.getElementById('symbol').value);
             formData.append('timeframe', document.getElementById('timeframe').value);
             formData.append('start_date', document.getElementById('start_date').value);
