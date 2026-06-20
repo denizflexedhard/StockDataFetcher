@@ -34,6 +34,15 @@
                     class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
             </div>
 
+            <!-- JSON Çıktı Dili -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300">JSON Çıktı Dili / Output Language</label>
+                <select id="lang" name="lang" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="tr" selected>Türkçe (Turkish)</option>
+                    <option value="en">English (İngilizce)</option>
+                </select>
+            </div>
+
             <!-- Zaman Dilimi -->
             <div>
                 <label class="block text-sm font-medium text-gray-300">Mum Periyodu</label>
@@ -185,6 +194,7 @@
             formData.append('start_date', document.getElementById('start_date').value);
             formData.append('end_date', document.getElementById('end_date').value);
             formData.append('indicators', selectedIndicators);
+            formData.append('lang', document.getElementById('lang').value);
 
             try {
                 const response = await fetch('/api/generate_json', {

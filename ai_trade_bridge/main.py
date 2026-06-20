@@ -42,6 +42,43 @@ init_db()
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+translations = {
+    "tr": {
+        "symbol": "sembol",
+        "timeframe": "zaman_dilimi_periyodu",
+        "start_date": "baslangic_tarihi",
+        "end_date": "bitis_tarihi",
+        "analysis_purpose": "analiz_amaci",
+        "analysis_purpose_desc": "Bu veri bir yapay zeka modelinin teknik analiz yapabilmesi için hazırlanmıştır.",
+        "candle_series": "mum_serisi",
+        "time": "zaman",
+        "price_action": "fiyat_hareketi",
+        "open": "acilis",
+        "high": "en_yuksek",
+        "low": "en_dusuk",
+        "close": "kapanis",
+        "volume": "hacim",
+        "indicators": "indikatorler"
+    },
+    "en": {
+        "symbol": "symbol",
+        "timeframe": "timeframe",
+        "start_date": "start_date",
+        "end_date": "end_date",
+        "analysis_purpose": "analysis_purpose",
+        "analysis_purpose_desc": "This data has been prepared for an artificial intelligence model to perform technical analysis.",
+        "candle_series": "candle_series",
+        "time": "time",
+        "price_action": "price_action",
+        "open": "open",
+        "high": "high",
+        "low": "low",
+        "close": "close",
+        "volume": "volume",
+        "indicators": "indicators"
+    }
+}
+
 @app.post("/api/generate_json")
 async def generate_json(
     request: Request,
@@ -50,7 +87,8 @@ async def generate_json(
     start_date: str = Form(...),
     end_date: str = Form(...),
     indicators: str = Form(...), # Virgülle ayrılmış string (Örn: "EMA9,EMA21,RSI")
-    exchange: str = Form(...)
+    exchange: str = Form(...),
+    lang: str = Form("tr")
 ):
     try:
         # Sembolü temizle ve büyük harf yap
@@ -123,14 +161,17 @@ async def generate_json(
         if "OBV" in indicator_list:
             df.ta.obv(append=True)
 
+        # Dil seçimine göre kelimeleri al (varsayılan: tr)
+        t = translations.get(lang, translations["tr"])
+
         # 4. Veriyi Hiyerarşik AI Formatına (JSON) Dönüştür
         json_output = {
-            "sembol": symbol,
-            "zaman_dilimi_periyodu": timeframe,
-            "baslangic_tarihi": start_date,
-            "bitis_tarihi": end_date,
-            "analiz_amaci": "Bu veri bir yapay zeka modelinin teknik analiz yapabilmesi için hazırlanmıştır.",
-            "mum_serisi": []
+            t["symbol"]: symbol,
+            t["timeframe"]: timeframe,
+            t["start_date"]: start_date,
+            t["end_date"]: end_date,
+            t["analysis_purpose"]: t["analysis_purpose_desc"],
+            t["candle_series"]: []
         }
 
         # Sütunları güvenli şekilde almak için yardımcı fonksiyon
@@ -143,74 +184,74 @@ async def generate_json(
 
         for index, row in df.iterrows():
             mum_verisi = {
-                "zaman": index.strftime('%Y-%m-%d %H:%M:%S'),
-                "fiyat_hareketi": {
-                    "acilis": round(row['Open'], 2),
-                    "en_yuksek": round(row['High'], 2),
-                    "en_dusuk": round(row['Low'], 2),
-                    "kapanis": round(row['Close'], 2),
-                    "hacim": int(row['Volume'])
+                t["time"]: index.strftime('%Y-%m-%d %H:%M:%S'),
+                t["price_action"]: {
+                    t["open"]: round(row['Open'], 2),
+                    t["high"]: round(row['High'], 2),
+                    t["low"]: round(row['Low'], 2),
+                    t["close"]: round(row['Close'], 2),
+                    t["volume"]: int(row['Volume'])
                 },
-                "indikatorler": {}
+                t["indicators"]: {}
             }
             
             # Dinamik olarak hesaplanan indikatörleri ekle
             if "EMA9" in indicator_list:
                 val = get_val(row, 'EMA_9')
-                if val is not None: mum_verisi["indikatorler"]["EMA_9"] = val
+                if val is not None: mum_verisi[t["indicators"]]["EMA_9"] = val
             if "EMA21" in indicator_list:
                 val = get_val(row, 'EMA_21')
-                if val is not None: mum_verisi["indikatorler"]["EMA_21"] = val
+                if val is not None: mum_verisi[t["indicators"]]["EMA_21"] = val
             if "SMA50" in indicator_list:
                 val = get_val(row, 'SMA_50')
-                if val is not None: mum_verisi["indikatorler"]["SMA_50"] = val
+                if val is not None: mum_verisi[t["indicators"]]["SMA_50"] = val
             if "SMA200" in indicator_list:
                 val = get_val(row, 'SMA_200')
-                if val is not None: mum_verisi["indikatorler"]["SMA_200"] = val
+                if val is not None: mum_verisi[t["indicators"]]["SMA_200"] = val
             if "RSI" in indicator_list:
                 val = get_val(row, 'RSI_14')
-                if val is not None: mum_verisi["indikatorler"]["RSI_14"] = val
+                if val is not None: mum_verisi[t["indicators"]]["RSI_14"] = val
                 
             if "MACD" in indicator_list:
                 macd = get_val(row, 'MACD_12_26_9')
                 macdh = get_val(row, 'MACDh_12_26_9')
                 macds = get_val(row, 'MACDs_12_26_9')
-                if macd is not None: mum_verisi["indikatorler"]["MACD"] = macd
-                if macdh is not None: mum_verisi["indikatorler"]["MACD_Histogram"] = macdh
-                if macds is not None: mum_verisi["indikatorler"]["MACD_Signal"] = macds
+                if macd is not None: mum_verisi[t["indicators"]]["MACD"] = macd
+                if macdh is not None: mum_verisi[t["indicators"]]["MACD_Histogram"] = macdh
+                if macds is not None: mum_verisi[t["indicators"]]["MACD_Signal"] = macds
                 
             if "BBANDS" in indicator_list:
                 bbl = get_val(row, 'BBL_20_2.0_2.0')
                 bbm = get_val(row, 'BBM_20_2.0_2.0')
                 bbu = get_val(row, 'BBU_20_2.0_2.0')
-                if bbl is not None: mum_verisi["indikatorler"]["Bollinger_Lower"] = bbl
-                if bbm is not None: mum_verisi["indikatorler"]["Bollinger_Middle"] = bbm
-                if bbu is not None: mum_verisi["indikatorler"]["Bollinger_Upper"] = bbu
+                if bbl is not None: mum_verisi[t["indicators"]]["Bollinger_Lower"] = bbl
+                if bbm is not None: mum_verisi[t["indicators"]]["Bollinger_Middle"] = bbm
+                if bbu is not None: mum_verisi[t["indicators"]]["Bollinger_Upper"] = bbu
                 
             if "STOCH" in indicator_list:
                 stoch_k = get_val(row, 'STOCHk_14_3_3')
                 stoch_d = get_val(row, 'STOCHd_14_3_3')
-                if stoch_k is not None: mum_verisi["indikatorler"]["Stoch_K"] = stoch_k
-                if stoch_d is not None: mum_verisi["indikatorler"]["Stoch_D"] = stoch_d
-
+                if stoch_k is not None: mum_verisi[t["indicators"]]["Stoch_K"] = stoch_k
+                if stoch_d is not None: mum_verisi[t["indicators"]]["Stoch_D"] = stoch_d
+ 
             if "ATR" in indicator_list:
                 atr = get_val(row, 'ATRr_14')
-                if atr is not None: mum_verisi["indikatorler"]["ATR"] = atr
-
+                if atr is not None: mum_verisi[t["indicators"]]["ATR"] = atr
+ 
             if "ADX" in indicator_list:
                 adx = get_val(row, 'ADX_14')
-                if adx is not None: mum_verisi["indikatorler"]["ADX"] = adx
-
+                if adx is not None: mum_verisi[t["indicators"]]["ADX"] = adx
+ 
             if "CCI" in indicator_list:
                 cci = get_val(row, 'CCI_14_0.015')
-                if cci is not None: mum_verisi["indikatorler"]["CCI"] = cci
-
+                if cci is not None: mum_verisi[t["indicators"]]["CCI"] = cci
+ 
             if "OBV" in indicator_list:
                 obv = get_val(row, 'OBV')
-                if obv is not None: mum_verisi["indikatorler"]["OBV"] = obv
+                if obv is not None: mum_verisi[t["indicators"]]["OBV"] = obv
                 
-            json_output["mum_serisi"].append(mum_verisi)
-
+            json_output[t["candle_series"]].append(mum_verisi)
+ 
         return JSONResponse(content=json_output)
 
     except Exception as e:
