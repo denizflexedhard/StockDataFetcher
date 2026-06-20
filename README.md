@@ -1,94 +1,94 @@
-# AI Trade Bridge - Yapay Zeka Uyumlu Finansal Veri Dönüştürücü
+# AI Trade Bridge - LLM-Compatible Financial Data Converter
 
-**AI Trade Bridge**, finansal piyasa verilerini ve teknik indikatörleri, Büyük Dil Modellerinin (LLM - ChatGPT, Gemini, Claude vb.) kolayca anlayabileceği, optimize edilmiş hiyerarşik JSON formatına dönüştüren modern ve hızlı bir web uygulamasıdır.
+**AI Trade Bridge** is a modern, high-performance web application designed to convert financial market charts and technical indicators into an optimized, hierarchical JSON format easily readable by Large Language Models (LLMs like ChatGPT, Gemini, Claude, etc.).
 
-Uygulama, yapay zekaya teknik analiz yaptırmak isteyen geliştiriciler ve yatırımcılar için kusursuz ve token-tasarruflu veri dosyaları hazırlar.
+The application prepares seamless, token-efficient data files for developers and traders who want to perform automated technical analysis using AI models.
 
 ---
 
-## 🌟 Öne Çıkan Özellikler
+## 🌟 Key Features
 
-- **Çoklu Borsa ve Piyasa Desteği:** 
+- **Multi-Exchange & Market Support:** 
   - Borsa İstanbul (BIST)
-  - ABD Borsaları (NASDAQ / NYSE)
-  - Kripto Paralar (USD Bazlı)
-  - Londra Borsası (LSE)
-  - Frankfurt Borsası (XETRA)
-  - Tokyo Borsası (TSE)
-  - Paris Borsası (Euronext)
-- **Dinamik ve Akıllı Arayüz:** Seçilen borsaya göre otomatik değişen örnek semboller, etiketler ve modern kullanıcı deneyimi.
-- **Gelişmiş Teknik İndikatör Hesaplama:** `pandas-ta` kütüphanesi kullanılarak en popüler indikatörler anında hesaplanır ve mum serisine eklenir.
-- **İstek Kaydı & Loglama:** SQLite veritabanı sayesinde IP adresi, aratılan sembol ve zaman dilimi loglanır.
-- **Token Dostu Hiyerarşik JSON Çıktısı:** LLM'lerin verileri en doğru şekilde anlamlandırması için özel olarak tasarlanmış veri şeması.
+  - US Stock Markets (NASDAQ / NYSE)
+  - Cryptocurrencies (USD-Based)
+  - London Stock Exchange (LSE)
+  - Frankfurt Stock Exchange (XETRA)
+  - Tokyo Stock Exchange (TSE)
+  - Paris Stock Exchange (Euronext)
+- **Dynamic & Smart UI:** Real-time label and placeholder updates based on the selected exchange for a premium user experience.
+- **Advanced Technical Indicator Calculation:** Automatically computes popular technical indicators on the fly using `pandas-ta` and embeds them directly into the candlestick series.
+- **Request Logging & Rate-Limiting Prep:** SQLite database records IP addresses, queried symbols, and timeframes for rate limiting or analytics.
+- **Token-Friendly Hierarchical JSON Output:** A customized data schema designed specifically for LLM context windows and attention mechanisms.
 
 ---
 
-## 🛠️ Teknoloji Yığını
+## 🛠️ Technology Stack
 
-- **Backend:** Python, FastAPI (Asenkron ve Yüksek Performanslı)
-- **Veri Çekme:** `yfinance` (Yahoo Finance API)
-- **Teknik Analiz:** `pandas` & `pandas-ta`
-- **Veritabanı:** SQLite
-- **Frontend:** HTML5, Vanilla JavaScript, Tailwind CSS (CDN)
+- **Backend:** Python, FastAPI (Asynchronous & High Performance)
+- **Data Fetching:** `yfinance` (Yahoo Finance API)
+- **Technical Analysis:** `pandas` & `pandas-ta`
+- **Database:** SQLite
+- **Frontend:** HTML5, Vanilla JavaScript, Tailwind CSS (via CDN)
 
 ---
 
-## 📂 Klasör Yapısı
+## 📂 Project Directory Structure
 
 ```text
 ai_trade_bridge/
 │
-├── main.py              # FastAPI backend kodumuz
-├── requirements.txt     # Python kütüphaneleri
-├── ai_database.db       # SQLite veritabanımız (otomatik oluşacak)
+├── main.py              # FastAPI backend code
+├── requirements.txt     # Python dependencies
+├── ai_database.db       # SQLite database (auto-generated)
 │
 └── templates/
-    └── index.html       # Kullanıcı arayüzümüz
+    └── index.html       # Web user interface
 ```
 
 ---
 
-## 🚀 Kurulum ve Çalıştırma
+## 🚀 Installation & Running
 
-### 1. Gereksinimler
-Sisteminizde **Python 3.8+** sürümünün kurulu olduğundan emin olun.
+### 1. Prerequisites
+Ensure you have **Python 3.8+** installed on your system.
 
-### 2. Bağımlılıkları Yükleyin
-Proje dizinine terminal üzerinden giderek aşağıdaki komutla gerekli kütüphaneleri kurun:
+### 2. Install Dependencies
+Navigate to the project root directory and run the following command to install the required libraries:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Uygulamayı Başlatın
-Uygulamayı geliştiriçi modunda başlatmak için `ai_trade_bridge` dizininde şu komutu çalıştırın:
+### 3. Launch the Application
+Run the following command inside the `ai_trade_bridge` directory to start the development server:
 
 ```bash
 python -m uvicorn main:app --reload
 ```
 
-Uygulama başarıyla başladıktan sonra tarayıcınızdan **[http://127.0.0.1:8000](http://127.0.0.1:8000)** adresine giderek arayüze erişebilirsiniz.
+Once started, open your browser and navigate to **[http://127.0.0.1:8000](http://127.0.0.1:8000)** to access the user interface.
 
 ---
 
-## 📊 Desteklenen Teknik İndikatörler
+## 📊 Supported Technical Indicators
 
-- **EMA9 / EMA21:** Üstel Hareketli Ortalama (9 ve 21 periyot)
-- **SMA50 / SMA200:** Basit Hareketli Ortalama (50 ve 200 periyot)
-- **RSI:** Göreceli Güç Endeksi (14 periyot)
-- **MACD:** Hareketli Ortalama Yakınsama Iraksama (12, 26, 9)
-- **BBANDS:** Bollinger Bantları (20 periyot, 2 standart sapma)
-- **STOCH:** Stokastik Osilatör (14, 3, 3)
-- **ATR:** Ortalama Gerçek Aralık (14 periyot)
-- **ADX:** Ortalama Yönsel Endeks (14 periyot)
-- **CCI:** Emtia Kanalı Endeksi (14 periyot)
-- **OBV:** Dengedeki Hacim
+- **EMA9 / EMA21:** Exponential Moving Average (9 & 21 periods)
+- **SMA50 / SMA200:** Simple Moving Average (50 & 200 periods)
+- **RSI:** Relative Strength Index (14 periods)
+- **MACD:** Moving Average Convergence Divergence (12, 26, 9)
+- **BBANDS:** Bollinger Bands (20 periods, 2 standard deviations)
+- **STOCH:** Stochastic Oscillator (14, 3, 3)
+- **ATR:** Average Real Range (14 periods)
+- **ADX:** Average Directional Index (14 periods)
+- **CCI:** Commodity Channel Index (14 periods)
+- **OBV:** On-Balance Volume
 
 ---
 
-## 📋 Örnek JSON Çıktısı
+## 📋 Sample JSON Output
 
-Uygulamanın ürettiği ve yapay zekaya doğrudan yükleyebileceğiniz JSON dosyasının yapısı aşağıdaki gibidir:
+Below is an example of the structured JSON data generated by the application, optimized for LLM processing:
 
 ```json
 {
@@ -118,6 +118,6 @@ Uygulamanın ürettiği ve yapay zekaya doğrudan yükleyebileceğiniz JSON dosy
 
 ---
 
-## 📝 Lisans
+## 📝 Disclaimer & License
 
-Bu proje eğitim ve kişisel kullanım amacıyla geliştirilmiştir. Verilerin doğruluğu Yahoo Finance API servisinin kalitesine bağlıdır, yatırım tavsiyesi içermez.
+This project is for educational and personal use only. The accuracy of the data depends entirely on the Yahoo Finance API. It does not constitute financial or investment advice.
