@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+build/
+dist/
+
+# SQLite Database (AI Trade Bridge logs)
+*.db
+*.db-journal
+*.sqlite3
+
+# IDEs & System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Exclude markdown files from git except README
+*.md
+!README.md
