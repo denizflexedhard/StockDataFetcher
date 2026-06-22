@@ -9,7 +9,7 @@ build/
 dist/
 
 # SQLite Database (AI Trade Bridge logs)
-*.db
+!ai_database.db
 *.db-journal
 *.sqlite3
 

@@ -28,7 +28,10 @@ app.add_middleware(
 )
 
 # Veritabanı Kurulumu
-DB_PATH = '/data/ai_database.db' if os.path.exists('/data') else 'ai_database.db'
+if os.path.exists('/data'):
+    DB_PATH = '/data/ai_database.db'
+else:
+    DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ai_database.db')
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
