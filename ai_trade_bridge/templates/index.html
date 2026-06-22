@@ -1,153 +1,479 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Trade Bridge | Finansal Veri Dönüştürücü</title>
+    <title>AI Trade Bridge | Finansal Veri Platformu</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom scrollbar for premium feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-white font-sans min-h-screen flex items-center justify-center">
 
-    <div class="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-lg border border-gray-700">
-        <h1 class="text-3xl font-bold text-center text-blue-400 mb-2">AI Trade Bridge</h1>
-        <p class="text-center text-gray-400 mb-8 text-sm">Yapay Zeka (ChatGPT/Gemini) için kusursuz finansal JSON dosyaları oluşturun.</p>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col md:flex-row">
 
-        <form id="dataForm" class="space-y-5">
-            <!-- Borsa Seçimi -->
-            <div>
-                <label class="block text-sm font-medium text-gray-300">Borsa / Piyasa</label>
-                <select id="exchange" name="exchange" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="bist" selected>Borsa İstanbul (BIST)</option>
-                    <option value="us">ABD Borsaları (NASDAQ / NYSE)</option>
-                    <option value="crypto">Kripto Paralar (USD Bazlı)</option>
-                    <option value="lse">Londra Borsası (LSE)</option>
-                    <option value="xetra">Frankfurt Borsası (XETRA)</option>
-                    <option value="tse">Tokyo Borsası (TSE)</option>
-                    <option value="euronext">Paris Borsası (Euronext)</option>
-                </select>
-            </div>
-
-            <!-- Sembol -->
-            <div>
-                <label id="symbolLabel" class="block text-sm font-medium text-gray-300">Hisse Sembolü (Örn: AKBNK, THYAO)</label>
-                <input type="text" id="symbol" name="symbol" required placeholder="AKBNK"
-                    class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
-            </div>
-
-            <!-- JSON Çıktı Dili -->
-            <div>
-                <label class="block text-sm font-medium text-gray-300">JSON Çıktı Dili / Output Language</label>
-                <select id="lang" name="lang" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="tr" selected>Türkçe (Turkish)</option>
-                    <option value="en">English (İngilizce)</option>
-                </select>
-            </div>
-
-            <!-- Zaman Dilimi -->
-            <div>
-                <label class="block text-sm font-medium text-gray-300">Mum Periyodu</label>
-                <select id="timeframe" name="timeframe" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="1m">1 Dakika</option>
-                    <option value="5m" selected>5 Dakika</option>
-                    <option value="15m">15 Dakika</option>
-                    <option value="1h">1 Saat</option>
-                    <option value="1d">1 Gün</option>
-                </select>
-                <p class="text-xs text-gray-400 mt-2">
-                    <span class="font-semibold text-yellow-500">Geçmiş Veri Sınırları:</span><br>
-                    • <strong>1 Dakika:</strong> Sadece son 7 gün çekilebilir.<br>
-                    • <strong>5 & 15 Dakika:</strong> Sadece son 60 gün çekilebilir.<br>
-                    • <strong>1 Saat:</strong> Sadece son 730 gün çekilebilir.<br>
-                    • <strong>1 Gün:</strong> Sınır yoktur.
-                </p>
-            </div>
-
-            <div class="flex space-x-4">
-                <!-- Başlangıç Tarihi -->
-                <div class="w-1/2">
-                    <label class="block text-sm font-medium text-gray-300">Başlangıç Tarihi</label>
-                    <input type="date" id="start_date" name="start_date" required class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <!-- Bitiş Tarihi -->
-                <div class="w-1/2">
-                    <label class="block text-sm font-medium text-gray-300">Bitiş Tarihi</label>
-                    <input type="date" id="end_date" name="end_date" required class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <!-- Fixed Sidebar on Left -->
+    <aside
+        class="w-full md:w-80 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col justify-between shrink-0 md:h-screen md:sticky md:top-0 z-20">
+        <div>
+            <!-- Header/Logo -->
+            <div class="p-6 border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <span class="p-2.5 bg-blue-600/10 text-blue-400 rounded-xl border border-blue-500/20">
+                        <i data-lucide="trending-up" class="w-6 h-6"></i>
+                    </span>
+                    <div>
+                        <h2
+                            class="text-lg font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent tracking-wide">
+                            AI TRADE BRIDGE</h2>
+                        <p class="text-xs text-slate-500 font-medium">Finansal Veri Platformu</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- İndikatörler -->
-            <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Eklenecek İndikatörler</label>
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" value="EMA9" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded" checked>
-                        <span class="ml-2 text-gray-300">EMA 9</span>
-                    </label>
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" value="EMA21" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded" checked>
-                        <span class="ml-2 text-gray-300">EMA 21</span>
-                    </label>
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" value="SMA50" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                        <span class="ml-2 text-gray-300">SMA 50</span>
-                    </label>
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" value="SMA200" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                        <span class="ml-2 text-gray-300">SMA 200</span>
-                    </label>
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" value="RSI" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded" checked>
-                        <span class="ml-2 text-gray-300">RSI (14)</span>
-                    </label>
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" value="MACD" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                        <span class="ml-2 text-gray-300">MACD</span>
-                    </label>
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" value="BBANDS" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                        <span class="ml-2 text-gray-300">Bollinger Bands</span>
-                    </label>
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" value="STOCH" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                        <span class="ml-2 text-gray-300">Stochastic</span>
-                    </label>
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" value="ATR" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                        <span class="ml-2 text-gray-300">ATR</span>
-                    </label>
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" value="ADX" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                        <span class="ml-2 text-gray-300">ADX</span>
-                    </label>
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" value="CCI" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                        <span class="ml-2 text-gray-300">CCI</span>
-                    </label>
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" value="OBV" class="indicator-checkbox form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                        <span class="ml-2 text-gray-300">OBV</span>
-                    </label>
+            <!-- Navigation Options -->
+            <nav class="p-4 space-y-2">
+                <button id="tab-generator" onclick="switchTab('generator')"
+                    class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 bg-blue-600 text-white shadow-lg shadow-blue-900/30">
+                    <i data-lucide="file-json" class="w-5 h-5"></i>
+                    <span>📝 Prepare Data for AI</span>
+                </button>
+                <button id="tab-screener" onclick="switchTab('screener')"
+                    class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/40">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                    <span>🔍 Opportunity Screener</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Footer / Info -->
+        <div class="p-5 border-t border-slate-850 text-[11px] text-slate-500 text-center font-medium">
+            <div>v2.0 &bull; Quantitative Update</div>
+            <div class="mt-1">&copy; 2026 AI Trade Bridge</div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 min-h-screen bg-slate-950 flex flex-col">
+        <!-- Top Header bar -->
+        <header
+            class="h-16 border-b border-slate-850/80 bg-slate-900/40 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-10">
+            <h1 id="page-title" class="text-lg font-bold text-slate-200 tracking-tight">Prepare Data for AI</h1>
+            <div class="flex items-center gap-4 text-xs text-slate-400">
+                <span
+                    class="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-full font-medium">
+                    <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                    Sunucu Bağlantısı Aktif
+                </span>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Containers -->
+        <div class="p-6 md:p-8 flex-1 flex flex-col max-w-5xl w-full mx-auto space-y-6">
+
+            <!-- MODULE 1: AI JSON Generator -->
+            <div id="content-generator" class="space-y-6">
+                <div
+                    class="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+                    <div
+                        class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500">
+                    </div>
+
+                    <div class="mb-8">
+                        <h2 class="text-2xl font-black text-slate-100 mb-2">Prepare Data for AI</h2>
+                        <p class="text-sm text-slate-400">Yapay Zeka modellerinin (ChatGPT/Gemini) teknik analiz
+                            gerçekleştirebilmesi için optimize edilmiş, temiz ve yapılandırılmış JSON dosyaları
+                            oluşturun.</p>
+                    </div>
+
+                    <form id="dataForm" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Borsa Seçimi -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Borsa
+                                    / Piyasa</label>
+                                <select id="exchange" name="exchange"
+                                    class="block w-full bg-slate-800 border border-slate-700/80 rounded-xl py-3 px-4 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm">
+                                    <option value="bist" selected>Borsa İstanbul (BIST)</option>
+                                    <option value="us">ABD Borsaları (NASDAQ / NYSE)</option>
+                                    <option value="crypto">Kripto Paralar (USD Bazlı)</option>
+                                    <option value="lse">Londra Borsası (LSE)</option>
+                                    <option value="xetra">Frankfurt Borsası (XETRA)</option>
+                                    <option value="tse">Tokyo Borsası (TSE)</option>
+                                    <option value="euronext">Paris Borsası (Euronext)</option>
+                                </select>
+                            </div>
+
+                            <!-- Sembol -->
+                            <div class="space-y-2">
+                                <label id="symbolLabel"
+                                    class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Hisse
+                                    Sembolü (Örn: AKBNK, THYAO)</label>
+                                <input type="text" id="symbol" name="symbol" required placeholder="AKBNK"
+                                    class="block w-full bg-slate-800 border border-slate-700/80 rounded-xl py-3 px-4 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 uppercase text-sm">
+                            </div>
+
+                            <!-- JSON Çıktı Dili -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">JSON
+                                    Çıktı Dili / Output Language</label>
+                                <select id="lang" name="lang"
+                                    class="block w-full bg-slate-800 border border-slate-700/80 rounded-xl py-3 px-4 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm">
+                                    <option value="tr" selected>Türkçe (Turkish)</option>
+                                    <option value="en">English (İngilizce)</option>
+                                </select>
+                            </div>
+
+                            <!-- Zaman Dilimi -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Mum
+                                    Periyodu</label>
+                                <select id="timeframe" name="timeframe"
+                                    class="block w-full bg-slate-800 border border-slate-700/80 rounded-xl py-3 px-4 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm">
+                                    <option value="1m">1 Dakika</option>
+                                    <option value="5m" selected>5 Dakika</option>
+                                    <option value="15m">15 Dakika</option>
+                                    <option value="1h">1 Saat</option>
+                                    <option value="1d">1 Gün</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Info limits alert card -->
+                        <div
+                            class="p-4 bg-slate-950/60 border border-slate-800/85 rounded-xl flex gap-3 text-xs text-slate-400">
+                            <i data-lucide="info" class="w-5 h-5 text-amber-500 shrink-0"></i>
+                            <div>
+                                <span class="font-bold text-amber-400 uppercase tracking-wide">Geçmiş Veri
+                                    Sınırları:</span>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1 font-medium">
+                                    <div>&bull; <strong>1 Dakika:</strong> Son 7 gün</div>
+                                    <div>&bull; <strong>5 & 15 Dk:</strong> Son 60 gün</div>
+                                    <div>&bull; <strong>1 Saat:</strong> Son 730 gün</div>
+                                    <div>&bull; <strong>1 Gün:</strong> Sınırsız</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <!-- Başlangıç Tarihi -->
+                            <div class="space-y-2">
+                                <label
+                                    class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Başlangıç
+                                    Tarihi</label>
+                                <input type="date" id="start_date" name="start_date" required
+                                    class="block w-full bg-slate-800 border border-slate-700/80 rounded-xl py-3 px-4 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm">
+                            </div>
+
+                            <!-- Bitiş Tarihi -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Bitiş
+                                    Tarihi</label>
+                                <input type="date" id="end_date" name="end_date" required
+                                    class="block w-full bg-slate-800 border border-slate-700/80 rounded-xl py-3 px-4 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-sm">
+                            </div>
+                        </div>
+
+                        <!-- İndikatörler -->
+                        <div class="space-y-3">
+                            <label
+                                class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Hesaplanacak
+                                ve Eklenecek İndikatörler</label>
+                            <div
+                                class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950/40 p-4 border border-slate-850 rounded-xl">
+                                <label class="inline-flex items-center cursor-pointer select-none">
+                                    <input type="checkbox" value="EMA9"
+                                        class="indicator-checkbox form-checkbox h-4.5 w-4.5 text-blue-500 bg-slate-800 border-slate-700 rounded transition"
+                                        checked>
+                                    <span class="ml-2.5 text-slate-300 text-xs font-medium">EMA 9</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer select-none">
+                                    <input type="checkbox" value="EMA21"
+                                        class="indicator-checkbox form-checkbox h-4.5 w-4.5 text-blue-500 bg-slate-800 border-slate-700 rounded transition"
+                                        checked>
+                                    <span class="ml-2.5 text-slate-300 text-xs font-medium">EMA 21</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer select-none">
+                                    <input type="checkbox" value="SMA50"
+                                        class="indicator-checkbox form-checkbox h-4.5 w-4.5 text-blue-500 bg-slate-800 border-slate-700 rounded transition">
+                                    <span class="ml-2.5 text-slate-300 text-xs font-medium">SMA 50</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer select-none">
+                                    <input type="checkbox" value="SMA200"
+                                        class="indicator-checkbox form-checkbox h-4.5 w-4.5 text-blue-500 bg-slate-800 border-slate-700 rounded transition">
+                                    <span class="ml-2.5 text-slate-300 text-xs font-medium">SMA 200</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer select-none">
+                                    <input type="checkbox" value="RSI"
+                                        class="indicator-checkbox form-checkbox h-4.5 w-4.5 text-blue-500 bg-slate-800 border-slate-700 rounded transition"
+                                        checked>
+                                    <span class="ml-2.5 text-slate-300 text-xs font-medium">RSI (14)</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer select-none">
+                                    <input type="checkbox" value="MACD"
+                                        class="indicator-checkbox form-checkbox h-4.5 w-4.5 text-blue-500 bg-slate-800 border-slate-700 rounded transition">
+                                    <span class="ml-2.5 text-slate-300 text-xs font-medium">MACD</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer select-none">
+                                    <input type="checkbox" value="BBANDS"
+                                        class="indicator-checkbox form-checkbox h-4.5 w-4.5 text-blue-500 bg-slate-800 border-slate-700 rounded transition">
+                                    <span class="ml-2.5 text-slate-300 text-xs font-medium">Bollinger Bands</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer select-none">
+                                    <input type="checkbox" value="STOCH"
+                                        class="indicator-checkbox form-checkbox h-4.5 w-4.5 text-blue-500 bg-slate-800 border-slate-700 rounded transition">
+                                    <span class="ml-2.5 text-slate-300 text-xs font-medium">Stochastic</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer select-none">
+                                    <input type="checkbox" value="ATR"
+                                        class="indicator-checkbox form-checkbox h-4.5 w-4.5 text-blue-500 bg-slate-800 border-slate-700 rounded transition">
+                                    <span class="ml-2.5 text-slate-300 text-xs font-medium">ATR</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer select-none">
+                                    <input type="checkbox" value="ADX"
+                                        class="indicator-checkbox form-checkbox h-4.5 w-4.5 text-blue-500 bg-slate-800 border-slate-700 rounded transition">
+                                    <span class="ml-2.5 text-slate-300 text-xs font-medium">ADX</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer select-none">
+                                    <input type="checkbox" value="CCI"
+                                        class="indicator-checkbox form-checkbox h-4.5 w-4.5 text-blue-500 bg-slate-800 border-slate-700 rounded transition">
+                                    <span class="ml-2.5 text-slate-300 text-xs font-medium">CCI</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer select-none">
+                                    <input type="checkbox" value="OBV"
+                                        class="indicator-checkbox form-checkbox h-4.5 w-4.5 text-blue-500 bg-slate-800 border-slate-700 rounded transition">
+                                    <span class="ml-2.5 text-slate-300 text-xs font-medium">OBV</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Buton -->
+                        <button type="submit" id="submitBtn"
+                            class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 px-6 rounded-xl transition duration-200 shadow-xl shadow-indigo-950/20 text-sm tracking-wide">
+                            JSON Dosyasını Hazırla ve İndir
+                        </button>
+                    </form>
+
+                    <div id="statusMsg" class="mt-6 text-center text-sm font-semibold hidden"></div>
                 </div>
             </div>
 
-            <!-- Buton -->
-            <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition duration-200 shadow-lg mt-4">
-                JSON Dosyasını Hazırla ve İndir
-            </button>
-        </form>
+            <!-- MODULE 2: Opportunity Screener -->
+            <div id="content-screener" class="space-y-6 hidden">
+                <div
+                    class="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+                    <div
+                        class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500">
+                    </div>
 
-        <div id="statusMsg" class="mt-4 text-center text-sm hidden"></div>
-    </div>
+                    <div class="mb-8">
+                        <h2 class="text-2xl font-black text-slate-100 mb-2">Quantitative Opportunity Screener</h2>
+                        <p class="text-sm text-slate-400">"Lagging Momentum" stratejisini uygulayarak BIST100 endeksinin
+                            gerisinde kalmış, ancak finansal rasyoları güçlü BIST şirketlerini metrik skorlama
+                            modeliyle bulun.</p>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row gap-6 items-end">
+                        <!-- Period Selection -->
+                        <div class="w-full md:flex-1 space-y-2">
+                            <label
+                                class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Karşılaştırma
+                                Dönemi</label>
+                            <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                <button type="button" onclick="selectPeriod('1w', this)"
+                                    class="period-btn py-2.5 px-3 text-xs bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-xl border border-slate-700/80 transition duration-200">1
+                                    Hafta</button>
+                                <button type="button" onclick="selectPeriod('1m', this)" id="default-period-btn"
+                                    class="period-btn py-2.5 px-3 text-xs bg-blue-600 text-white font-semibold rounded-xl border border-blue-500 shadow-md shadow-blue-900/10 transition duration-200">1
+                                    Ay</button>
+                                <button type="button" onclick="selectPeriod('3m', this)"
+                                    class="period-btn py-2.5 px-3 text-xs bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-xl border border-slate-700/80 transition duration-200">3
+                                    Ay</button>
+                                <button type="button" onclick="selectPeriod('6m', this)"
+                                    class="period-btn py-2.5 px-3 text-xs bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-xl border border-slate-700/80 transition duration-200">6
+                                    Ay</button>
+                                <button type="button" onclick="selectPeriod('1y', this)"
+                                    class="period-btn py-2.5 px-3 text-xs bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-xl border border-slate-700/80 transition duration-200">1
+                                    Yıl</button>
+                                <button type="button" onclick="selectPeriod('custom', this)"
+                                    class="period-btn py-2.5 px-3 text-xs bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold rounded-xl border border-slate-700/80 transition duration-200">Özel</button>
+                            </div>
+                        </div>
+
+                        <!-- Custom Date Input -->
+                        <div id="custom-date-container" class="hidden w-full md:w-52 space-y-2">
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Başlangıç
+                                Tarihi</label>
+                            <input type="date" id="screener-custom-date"
+                                class="w-full bg-slate-800 border border-slate-700/80 rounded-xl py-2.5 px-4 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+                        </div>
+
+                        <!-- Run Button -->
+                        <div class="w-full md:w-auto">
+                            <button type="button" id="runScreenerBtn" onclick="runScreener()"
+                                class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3 px-6 rounded-xl shadow-xl shadow-teal-950/20 transition flex items-center justify-center gap-2 text-sm tracking-wide">
+                                <i data-lucide="play" class="w-4 h-4"></i>
+                                Taramayı Çalıştır
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="screener-loading"
+                    class="hidden flex-col items-center justify-center py-20 bg-slate-900 border border-slate-850 rounded-2xl shadow-xl">
+                    <div class="relative w-12 h-12">
+                        <div class="absolute w-full h-full border-4 border-slate-800 rounded-full"></div>
+                        <div
+                            class="absolute w-full h-full border-4 border-emerald-500 border-t-transparent rounded-full animate-spin">
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-400 mt-4 font-semibold animate-pulse" id="screener-loading-text">
+                        Analyzing 700+ stocks against BIST100... Please wait.</p>
+                </div>
+
+                <!-- Error Alert -->
+                <div id="screener-error"
+                    class="hidden p-5 bg-rose-500/10 border border-rose-500/25 text-rose-400 rounded-2xl flex gap-3 text-sm font-semibold">
+                    <i data-lucide="alert-octagon" class="w-5 h-5 shrink-0"></i>
+                    <span id="screener-error-msg">Bir hata oluştu.</span>
+                </div>
+
+                <!-- Screener Results Content -->
+                <div id="screener-results-container" class="hidden space-y-6">
+                    <!-- Benchmark Info Banner -->
+                    <div
+                        class="bg-gradient-to-r from-slate-900 to-slate-850 border border-slate-800/80 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 shadow-xl">
+                        <div>
+                            <h3 class="text-xs font-semibold text-slate-450 uppercase tracking-wider">Endeks Performans
+                                Bilgisi</h3>
+                            <p class="text-sm text-slate-350 mt-1.5 font-medium">BIST100 endeksi karşılaştırma
+                                periyodunda şu performansı gösterdi:</p>
+                        </div>
+                        <div class="flex items-center gap-6 shrink-0">
+                            <div class="text-left">
+                                <div class="text-xs text-slate-400 font-medium">BIST100 Getirisi</div>
+                                <div id="bist100-return-val" class="text-2xl font-black mt-1">+0.00%</div>
+                            </div>
+                            <div class="h-10 w-px bg-slate-800"></div>
+                            <div class="text-left">
+                                <div class="text-xs text-slate-400 font-medium">Tarih Aralığı Başlangıcı</div>
+                                <div id="screener-start-date-val" class="text-sm font-bold text-slate-200 mt-2">
+                                    2026-05-22</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table Card -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
+                        <!-- Table header with sort controls -->
+                        <div
+                            class="p-6 border-b border-slate-850 bg-slate-900 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <h3 class="text-base font-bold text-slate-100">Filtreyi Geçen BIST Hisseleri</h3>
+                                <p class="text-xs text-slate-500 mt-1 font-medium">BIST100'e göre geride kalmış (hisse
+                                    getirisi &lt; endeks getirisi) ve AI Opportunity Score hesabı yapılmış şirketler.
+                                </p>
+                            </div>
+                            <!-- Sort dropdown -->
+                            <div class="flex items-center gap-2 shrink-0">
+                                <label for="screener-sort"
+                                    class="text-xs text-slate-400 font-bold whitespace-nowrap uppercase tracking-wider">Sıralama:</label>
+                                <select id="screener-sort" onchange="sortScreenerResults(this.value)"
+                                    class="bg-slate-800 border border-slate-750/90 rounded-xl text-xs py-2 px-3 text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold cursor-pointer">
+                                    <option value="score">AI Opportunity Score (Yüksekten Düşüğe)</option>
+                                    <option value="fk">P/E (F/K) (Düşükten Yükseğe)</option>
+                                    <option value="fd_favok">EV/EBITDA (FD/FAVÖK) (Düşükten Yükseğe)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm border-collapse">
+                                <thead>
+                                    <tr
+                                        class="bg-slate-950/60 text-slate-400 font-bold text-xs border-b border-slate-850 uppercase tracking-wider">
+                                        <th class="py-4.5 px-6">Skor (0-100)</th>
+                                        <th class="py-4.5 px-6">Hisse Kodu</th>
+                                        <th class="py-4.5 px-6 text-right">Hisse Getirisi</th>
+                                        <th class="py-4.5 px-6 text-right">FD/FAVÖK</th>
+                                        <th class="py-4.5 px-6 text-right">F/K</th>
+                                        <th class="py-4.5 px-6 text-right">PD/DD</th>
+                                        <th class="py-4.5 px-6 text-right">ROE</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="screener-table-body" class="divide-y divide-slate-850 bg-slate-900/40">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="screener-empty-state" class="hidden p-16 text-center bg-slate-900">
+                            <div
+                                class="p-3 bg-slate-850 text-slate-500 rounded-full inline-block mb-4 border border-slate-800">
+                                <i data-lucide="alert-circle" class="w-8 h-8"></i>
+                            </div>
+                            <h4 class="text-slate-200 font-bold mb-1.5 text-base">Geride Kalmış Hisse Bulunmadı</h4>
+                            <p class="text-xs text-slate-500 max-w-md mx-auto">Seçtiğiniz dönemde BIST100 endeksinin
+                                altında getiri sağlayan bir BIST hissesi bulunmamaktadır.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
 
     <script>
-        // Set default dates
+        // Global variables
+        let currentPeriod = '1m';
+        let currentScreenerData = null;
+
+        // Initialize default dates for JSON Generator on startup
         const today = new Date();
         const pastWeek = new Date(today);
         pastWeek.setDate(pastWeek.getDate() - 7);
-        
+
         document.getElementById('end_date').value = today.toISOString().split('T')[0];
         document.getElementById('start_date').value = pastWeek.toISOString().split('T')[0];
+
+        // Initialize custom date for Screener
+        const pastMonth = new Date(today);
+        pastMonth.setDate(pastMonth.getDate() - 30);
+        document.getElementById('screener-custom-date').value = pastMonth.toISOString().split('T')[0];
 
         // Borsa seçimine göre sembol alanı etiket ve placeholder'ını dinamik güncelleme
         const exchangeSelect = document.getElementById('exchange');
@@ -170,22 +496,219 @@
             symbolInput.placeholder = config.placeholder;
         });
 
+        // Tab Switching function
+        function switchTab(tabId) {
+            const tabs = ['generator', 'screener'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const content = document.getElementById(`content-${t}`);
+
+                if (t === tabId) {
+                    // Make active
+                    btn.className = "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 bg-blue-600 text-white shadow-lg shadow-blue-900/30";
+                    content.classList.remove('hidden');
+                } else {
+                    // Make inactive
+                    btn.className = "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 text-slate-400 hover:text-slate-200 hover:bg-slate-800/40";
+                    content.classList.add('hidden');
+                }
+            });
+
+            // Update title
+            const pageTitle = document.getElementById('page-title');
+            if (tabId === 'generator') {
+                pageTitle.innerText = "Prepare Data for AI";
+            } else if (tabId === 'screener') {
+                pageTitle.innerText = "Quantitative Opportunity Screener";
+            }
+
+            // Re-render lucide icons just in case
+            lucide.createIcons();
+        }
+
+        // Period Selection logic for Module 2
+        function selectPeriod(period, btn) {
+            currentPeriod = period;
+
+            // Update period buttons styling
+            const buttons = document.querySelectorAll('.period-btn');
+            buttons.forEach(b => {
+                b.className = "period-btn py-2.5 px-3 text-xs bg-slate-800 hover:bg-slate-755 text-slate-300 font-semibold rounded-xl border border-slate-700/80 transition duration-200";
+            });
+
+            btn.className = "period-btn py-2.5 px-3 text-xs bg-blue-600 text-white font-semibold rounded-xl border border-blue-500 shadow-md shadow-blue-900/10 transition duration-200";
+
+            // Show/hide custom date picker
+            const customDateContainer = document.getElementById('custom-date-container');
+            if (period === 'custom') {
+                customDateContainer.classList.remove('hidden');
+            } else {
+                customDateContainer.classList.add('hidden');
+            }
+        }
+
+        // Screener API call and rendering
+        async function runScreener() {
+            const loadDiv = document.getElementById('screener-loading');
+            const errDiv = document.getElementById('screener-error');
+            const resDiv = document.getElementById('screener-results-container');
+            const runBtn = document.getElementById('runScreenerBtn');
+
+            // Toggle visibility
+            loadDiv.classList.remove('hidden');
+            errDiv.classList.add('hidden');
+            resDiv.classList.add('hidden');
+            runBtn.disabled = true;
+            runBtn.classList.add('opacity-70');
+
+            let url = `/api/screener?period=${currentPeriod}`;
+            if (currentPeriod === 'custom') {
+                const custDateVal = document.getElementById('screener-custom-date').value;
+                url += `&custom_date=${custDateVal}`;
+            }
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentScreenerData = data;
+
+                    // Render BIST100 performance val
+                    const bistReturnVal = document.getElementById('bist100-return-val');
+                    const returnPct = data.bist100_return;
+                    bistReturnVal.innerText = (returnPct > 0 ? '+' : '') + returnPct.toFixed(2) + '%';
+
+                    if (returnPct > 0) {
+                        bistReturnVal.className = "text-2xl font-black text-emerald-400 mt-1";
+                    } else if (returnPct < 0) {
+                        bistReturnVal.className = "text-2xl font-black text-rose-400 mt-1";
+                    } else {
+                        bistReturnVal.className = "text-2xl font-black text-slate-400 mt-1";
+                    }
+
+                    document.getElementById('screener-start-date-val').innerText = data.start_date;
+
+                    // Reset sorting select
+                    document.getElementById('screener-sort').value = 'score';
+
+                    // Render table
+                    renderScreenerTable();
+
+                    resDiv.classList.remove('hidden');
+                } else {
+                    document.getElementById('screener-error-msg').innerText = "Hata: " + (data.hata || "Bilinmeyen bir hata oluştu.");
+                    errDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                document.getElementById('screener-error-msg').innerText = "Hata: Sunucu bağlantı hatası gerçekleşti.";
+                errDiv.classList.remove('hidden');
+            } finally {
+                loadDiv.classList.add('hidden');
+                runBtn.disabled = false;
+                runBtn.classList.remove('opacity-70');
+            }
+        }
+
+        function renderScreenerTable() {
+            const tbody = document.getElementById('screener-table-body');
+            const emptyState = document.getElementById('screener-empty-state');
+            tbody.innerHTML = '';
+
+            if (!currentScreenerData || !currentScreenerData.results || currentScreenerData.results.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            currentScreenerData.results.forEach(row => {
+                // Score Badge classes
+                let badgeClass = '';
+                if (row.score >= 75) {
+                    badgeClass = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+                } else if (row.score >= 50) {
+                    badgeClass = 'bg-amber-500/10 text-amber-400 border border-amber-500/30';
+                } else {
+                    badgeClass = 'bg-rose-500/10 text-rose-400 border border-rose-500/30';
+                }
+
+                // Return formatting
+                let returnClass = '';
+                let returnText = '';
+                if (row.return > 0) {
+                    returnClass = 'text-emerald-405 text-emerald-400 font-bold';
+                    returnText = '+' + row.return.toFixed(2) + '%';
+                } else if (row.return < 0) {
+                    returnClass = 'text-rose-405 text-rose-400 font-bold';
+                    returnText = row.return.toFixed(2) + '%';
+                } else {
+                    returnClass = 'text-slate-400 font-bold';
+                    returnText = '0.00%';
+                }
+
+                // Format numbers
+                const formatNum = (val) => val !== null && val !== undefined ? val.toFixed(2) : '-';
+                const formatRoe = (val) => val !== null && val !== undefined ? '%' + val.toFixed(1) : '-';
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 border-b border-slate-850/80 transition duration-150';
+                tr.innerHTML = `
+                    <td class="py-4.5 px-6">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${badgeClass}">
+                            ${row.score}
+                        </span>
+                    </td>
+                    <td class="py-4.5 px-6 font-bold text-slate-200 tracking-tight">${row.symbol}</td>
+                    <td class="py-4.5 px-6 text-right ${returnClass}">${returnText}</td>
+                    <td class="py-4.5 px-6 text-right text-slate-300 font-mono text-xs">${formatNum(row.fd_favok)}</td>
+                    <td class="py-4.5 px-6 text-right text-slate-300 font-mono text-xs">${formatNum(row.fk)}</td>
+                    <td class="py-4.5 px-6 text-right text-slate-300 font-mono text-xs">${formatNum(row.pddd)}</td>
+                    <td class="py-4.5 px-6 text-right text-slate-350 font-semibold text-xs">${formatRoe(row.roe)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function sortScreenerResults(criteria) {
+            if (!currentScreenerData || !currentScreenerData.results) return;
+
+            if (criteria === 'score') {
+                currentScreenerData.results.sort((a, b) => b.score - a.score);
+            } else if (criteria === 'fk') {
+                currentScreenerData.results.sort((a, b) => {
+                    const aVal = a.fk === null || a.fk === undefined || a.fk <= 0 ? 999999 : a.fk;
+                    const bVal = b.fk === null || b.fk === undefined || b.fk <= 0 ? 999999 : b.fk;
+                    return aVal - bVal;
+                });
+            } else if (criteria === 'fd_favok') {
+                currentScreenerData.results.sort((a, b) => {
+                    const aVal = a.fd_favok === null || a.fd_favok === undefined || a.fd_favok <= 0 ? 999999 : a.fd_favok;
+                    const bVal = b.fd_favok === null || b.fd_favok === undefined || b.fd_favok <= 0 ? 999999 : b.fd_favok;
+                    return aVal - bVal;
+                });
+            }
+
+            renderScreenerTable();
+        }
+
+        // Module 1 Data Form submit handler (Keep original behavior)
         document.getElementById('dataForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const btn = document.getElementById('submitBtn');
             const statusMsg = document.getElementById('statusMsg');
-            
-            // UI Güncelleme (Yükleniyor)
+
+            // UI Update (Loading)
             btn.disabled = true;
             btn.innerText = "Veriler Çekiliyor ve Hesaplanıyor...";
             btn.classList.add("opacity-70");
             statusMsg.classList.add("hidden");
 
-            // Seçili indikatörleri virgülle ayrılmış string yapma
+            // Extract indicator array as CSV
             const selectedIndicators = Array.from(document.querySelectorAll('.indicator-checkbox:checked'))
-                                            .map(cb => cb.value)
-                                            .join(',');
+                .map(cb => cb.value)
+                .join(',');
 
             const formData = new FormData();
             formData.append('exchange', document.getElementById('exchange').value);
@@ -205,11 +728,10 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Blob oluştur ve dosyayı indir
                     const jsonString = JSON.stringify(data, null, 2);
                     const blob = new Blob([jsonString], { type: "application/json" });
                     const url = URL.createObjectURL(blob);
-                    
+
                     const a = document.createElement('a');
                     a.href = url;
                     a.download = `AI_TradeData_${document.getElementById('symbol').value}_${document.getElementById('timeframe').value}.json`;
@@ -219,21 +741,25 @@
                     URL.revokeObjectURL(url);
 
                     statusMsg.innerText = "✅ Başarılı! Dosyanız indirildi. Artık yapay zekaya yükleyebilirsiniz.";
-                    statusMsg.className = "mt-4 text-center text-sm text-green-400 block";
+                    statusMsg.className = "mt-6 text-center text-sm text-emerald-450 font-bold block";
                 } else {
                     statusMsg.innerText = "❌ Hata: " + (data.hata || "Bilinmeyen bir hata oluştu.");
-                    statusMsg.className = "mt-4 text-center text-sm text-red-400 block";
+                    statusMsg.className = "mt-6 text-center text-sm text-rose-450 font-bold block";
                 }
             } catch (error) {
                 statusMsg.innerText = "❌ Sunucu bağlantı hatası.";
-                statusMsg.className = "mt-4 text-center text-sm text-red-400 block";
+                statusMsg.className = "mt-6 text-center text-sm text-rose-450 font-bold block";
             } finally {
-                // UI Sıfırlama
+                // UI Reset
                 btn.disabled = false;
                 btn.innerText = "JSON Dosyasını Hazırla ve İndir";
                 btn.classList.remove("opacity-70");
             }
         });
+
+        // Initialize Lucide Icons on start
+        lucide.createIcons();
     </script>
 </body>
+
 </html>

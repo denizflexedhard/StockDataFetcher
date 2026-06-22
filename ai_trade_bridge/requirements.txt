@@ -5,3 +5,4 @@ pandas
 pandas-ta
 jinja2
 python-multipart
+apscheduler

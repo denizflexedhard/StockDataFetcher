@@ -6,12 +6,16 @@ import yfinance as yf
 import pandas as pd
 import pandas_ta as ta
 import sqlite3
-from datetime import datetime
+import os
+import random
+from datetime import datetime, timedelta
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = FastAPI(title="AI Trade Bridge API")
 
 # HTML şablonları için klasör
-templates = Jinja2Templates(directory="templates")
+templates_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+templates = Jinja2Templates(directory=templates_dir)
 
 # CORS ayarları (Frontend'in API'ye erişebilmesi için)
 app.add_middleware(
@@ -22,8 +26,10 @@ app.add_middleware(
 )
 
 # Veritabanı Kurulumu
+DB_PATH = '/data/ai_database.db' if os.path.exists('/data') else 'ai_database.db'
+
 def init_db():
-    conn = sqlite3.connect('ai_database.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
         CREATE TABLE IF NOT EXISTS request_logs
@@ -33,14 +39,276 @@ def init_db():
          timeframe TEXT, 
          created_at DATETIME)
     ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS fundamentals
+        (symbol TEXT PRIMARY KEY,
+         fk REAL,
+         pddd REAL,
+         fd_favok REAL,
+         roe REAL,
+         last_updated DATETIME)
+    ''')
     conn.commit()
     conn.close()
 
-init_db()
+def get_csv_path():
+    csv_path = 'shareCodes.csv'
+    if not os.path.exists(csv_path):
+        parent_dir_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'shareCodes.csv')
+        if os.path.exists(parent_dir_path):
+            csv_path = parent_dir_path
+        else:
+            csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shareCodes.csv')
+    return csv_path
+
+def load_symbols_and_generate_fundamentals():
+    csv_path = get_csv_path()
+    if not os.path.exists(csv_path):
+        print(f"Error: shareCodes.csv not found at {csv_path}")
+        return []
+    
+    try:
+        df = pd.read_csv(csv_path, header=None)
+        raw_symbols = df[0].dropna().astype(str).str.strip().tolist()
+    except Exception as e:
+        print(f"Error reading CSV file: {e}")
+        return []
+
+    data = []
+    for sym in raw_symbols:
+        if not sym:
+            continue
+        formatted_sym = sym if sym.endswith(".IS") else f"{sym}.IS"
+        
+        # Generate realistic random values
+        fk = round(random.uniform(2.0, 20.0), 2)
+        pddd = round(random.uniform(0.5, 6.0), 2)
+        fd_favok = round(random.uniform(2.0, 15.0), 2)
+        roe = round(random.uniform(5.0, 50.0), 2)
+        data.append((formatted_sym, fk, pddd, fd_favok, roe))
+    return data
+
+def populate_sample_fundamentals():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM fundamentals")
+    count = c.fetchone()[0]
+    if count < 500:
+        print(f"Wiping old fundamentals data (count={count}) and populating from shareCodes.csv...")
+        c.execute("DELETE FROM fundamentals")
+        sample_data = load_symbols_and_generate_fundamentals()
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        for symbol, fk, pddd, fd_favok, roe in sample_data:
+            c.execute("""
+                INSERT OR REPLACE INTO fundamentals (symbol, fk, pddd, fd_favok, roe, last_updated)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (symbol, fk, pddd, fd_favok, roe, now))
+        conn.commit()
+    conn.close()
+
+def update_fundamentals_job():
+    print("APScheduler job running: updating fundamentals...")
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    sample_data = load_symbols_and_generate_fundamentals()
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    for symbol, fk, pddd, fd_favok, roe in sample_data:
+        c.execute("""
+            INSERT OR REPLACE INTO fundamentals (symbol, fk, pddd, fd_favok, roe, last_updated)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (symbol, fk, pddd, fd_favok, roe, now))
+    conn.commit()
+    conn.close()
+    print("APScheduler job finished.")
+
+scheduler = BackgroundScheduler()
+
+@app.on_event("startup")
+def start_scheduler():
+    init_db()
+    populate_sample_fundamentals()
+    scheduler.add_job(update_fundamentals_job, 'cron', hour=18, minute=30)
+    scheduler.start()
+    print("Background scheduler started successfully.")
+
+@app.on_event("shutdown")
+def stop_scheduler():
+    scheduler.shutdown()
+    print("Background scheduler stopped.")
+
+def calculate_opportunity_score(fk: float, pddd: float, fd_favok: float, roe: float) -> int:
+    score = 0
+    # P/E Ratio (F/K) (Max 25 Points)
+    if fk is not None:
+        if 0 <= fk <= 6:
+            score += 25
+        elif 6.01 <= fk <= 10:
+            score += 15
+        elif 10.01 <= fk <= 15:
+            score += 5
+            
+    # P/B Ratio (PD/DD) (Max 25 Points)
+    if pddd is not None:
+        if 0 <= pddd <= 1.5:
+            score += 25
+        elif 1.51 <= pddd <= 3:
+            score += 15
+        elif 3.01 <= pddd <= 5:
+            score += 5
+            
+    # EV/EBITDA (FD/FAVÖK) (Max 25 Points)
+    if fd_favok is not None:
+        if 0 <= fd_favok <= 5:
+            score += 25
+        elif 5.01 <= fd_favok <= 8:
+            score += 15
+        elif 8.01 <= fd_favok <= 12:
+            score += 5
+            
+    # ROE (Return on Equity) (Max 25 Points)
+    if roe is not None:
+        if roe >= 35:
+            score += 25
+        elif 20 <= roe < 35:
+            score += 15
+        elif 10 <= roe < 20:
+            score += 5
+            
+    return score
+
+def get_start_date(period: str, custom_date: str = None) -> str:
+    today = datetime.now()
+    if period == "1w":
+        dt = today - timedelta(weeks=1)
+    elif period == "1m":
+        dt = today - timedelta(days=30)
+    elif period == "3m":
+        dt = today - timedelta(days=90)
+    elif period == "6m":
+        dt = today - timedelta(days=180)
+    elif period == "1y":
+        dt = today - timedelta(days=365)
+    elif period == "custom" and custom_date:
+        return custom_date
+    else:
+        dt = today - timedelta(days=30)
+    return dt.strftime("%Y-%m-%d")
+
+def get_ticker_return(symbol: str, start_date_str: str) -> float:
+    ticker = yf.Ticker(symbol)
+    df = ticker.history(start=start_date_str)
+    if df.empty or len(df) < 1:
+        raise ValueError(f"No history data returned for ticker {symbol}")
+    start_price = df['Close'].iloc[0]
+    end_price = df['Close'].iloc[-1]
+    pct_return = ((end_price - start_price) / start_price) * 100
+    return round(pct_return, 2)
+
+@app.get("/api/screener")
+async def run_screener(
+    period: str = "1m",
+    custom_date: str = None
+):
+    try:
+        start_date_str = get_start_date(period, custom_date)
+        
+        # Get stock fundamentals from DB
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT symbol, fk, pddd, fd_favok, roe, last_updated FROM fundamentals")
+        rows = c.fetchall()
+        conn.close()
+        
+        if not rows:
+            return JSONResponse(content={
+                "bist100_return": 0.0,
+                "results": [],
+                "start_date": start_date_str
+            })
+            
+        # Build symbols list and add index symbol
+        symbols = [row[0] for row in rows]
+        symbols_to_download = list(set(symbols + ["XU100.IS"]))
+        
+        # Batch download historical prices
+        try:
+            df_prices = yf.download(symbols_to_download, start=start_date_str, progress=False)
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"hata": f"Batch download failed: {str(e)}"})
+            
+        if df_prices.empty or 'Close' not in df_prices:
+            return JSONResponse(status_code=500, content={"hata": "Download returned empty price dataframe."})
+            
+        df_close = df_prices['Close']
+        if isinstance(df_close, pd.Series):
+            df_close = df_close.to_frame()
+            
+        # Calculate index return (XU100.IS)
+        if "XU100.IS" in df_close.columns:
+            bist100_series = df_close["XU100.IS"].dropna()
+        else:
+            try:
+                bist100_series = yf.download("XU100.IS", start=start_date_str, progress=False)['Close'].dropna()
+            except Exception:
+                bist100_series = pd.Series()
+                
+        if bist100_series.empty or len(bist100_series) < 1:
+            return JSONResponse(status_code=400, content={"hata": f"BIST100 endeks verisi alınamadı ({start_date_str} tarihinden itibaren)."})
+            
+        bist100_start = bist100_series.iloc[0]
+        bist105_end = bist100_series.iloc[-1]
+        bist100_return = round(((bist105_end - bist100_start) / bist100_start) * 100, 2)
+        
+        results = []
+        for symbol, fk, pddd, fd_favok, roe, last_updated in rows:
+            try:
+                if symbol not in df_close.columns:
+                    continue
+                    
+                series = df_close[symbol].dropna()
+                if series.empty or len(series) < 1:
+                    continue
+                    
+                start_price = series.iloc[0]
+                end_price = series.iloc[-1]
+                
+                if start_price <= 0:
+                    continue
+                    
+                stock_return = round(((end_price - start_price) / start_price) * 100, 2)
+                
+                # Filter: ONLY stocks whose returns are below the index return
+                if stock_return < bist100_return:
+                    score = calculate_opportunity_score(fk, pddd, fd_favok, roe)
+                    results.append({
+                        "symbol": symbol,
+                        "return": stock_return,
+                        "fk": fk,
+                        "pddd": pddd,
+                        "fd_favok": fd_favok,
+                        "roe": roe,
+                        "score": score,
+                        "last_updated": last_updated
+                    })
+            except Exception as e:
+                # Log the issue but do not crash the endpoint
+                print(f"Screener: Error calculating return for {symbol}: {str(e)}")
+                continue
+                
+        # Sort from highest score to lowest by default
+        results.sort(key=lambda x: x["score"], reverse=True)
+        
+        return JSONResponse(content={
+            "bist100_return": bist100_return,
+            "results": results,
+            "start_date": start_date_str
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"hata": str(e)})
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
 
 translations = {
     "tr": {
@@ -117,7 +385,7 @@ async def generate_json(
 
         # 1. İstek Logunu Veritabanına Kaydet (Sembolün nihai halini logluyoruz)
         client_ip = request.client.host
-        conn = sqlite3.connect('ai_database.db')
+        conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute("INSERT INTO request_logs (ip_address, symbol, timeframe, created_at) VALUES (?, ?, ?, ?)",
                   (client_ip, symbol, timeframe, datetime.now()))
