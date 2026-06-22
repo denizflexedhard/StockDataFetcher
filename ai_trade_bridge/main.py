@@ -173,7 +173,7 @@ def scrape_all_fundamentals_task():
             except Exception:
                 pass
             
-        time.sleep(0.5)
+        time.sleep(1.5)
         
     is_scraping = False
     print("Background fundamentals scraping finished.")
@@ -219,17 +219,17 @@ def check_and_trigger_update():
             except Exception as e:
                 print(f"Error seeding database placeholders: {e}")
                 
-    c.execute("SELECT MIN(last_updated) FROM fundamentals")
-    oldest_str = c.fetchone()[0]
+    c.execute("SELECT MAX(last_updated) FROM fundamentals")
+    latest_str = c.fetchone()[0]
     conn.close()
     
     needs_update = False
-    if oldest_str is None:
+    if latest_str is None or latest_str == '1970-01-01 00:00:00':
         needs_update = True
     else:
         try:
-            oldest_dt = datetime.strptime(oldest_str, "%Y-%m-%d %H:%M:%S")
-            if datetime.now() - oldest_dt > timedelta(hours=24):
+            latest_dt = datetime.strptime(latest_str, "%Y-%m-%d %H:%M:%S")
+            if datetime.now() - latest_dt > timedelta(hours=24):
                 needs_update = True
         except Exception:
             needs_update = True
@@ -330,9 +330,6 @@ async def run_screener(
 ):
     try:
         start_date_str = get_start_date(period, custom_date)
-        
-        # Check and trigger background update if cache has expired (24h)
-        check_and_trigger_update()
         
         # Get stock fundamentals from DB
         conn = sqlite3.connect(DB_PATH)
