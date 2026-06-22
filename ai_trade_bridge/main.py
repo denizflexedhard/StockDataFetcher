@@ -8,6 +8,8 @@ import pandas_ta as ta
 import sqlite3
 import os
 import random
+import threading
+import time
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -61,73 +63,143 @@ def get_csv_path():
             csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shareCodes.csv')
     return csv_path
 
-def load_symbols_and_generate_fundamentals():
+is_scraping = False
+
+def scrape_all_fundamentals_task():
+    global is_scraping
+    if is_scraping:
+        print("Scraping already in progress. Skipping.")
+        return
+    is_scraping = True
+    print("Starting background fundamentals scraping...")
+    
     csv_path = get_csv_path()
     if not os.path.exists(csv_path):
         print(f"Error: shareCodes.csv not found at {csv_path}")
-        return []
-    
+        is_scraping = False
+        return
+        
     try:
         df = pd.read_csv(csv_path, header=None)
         raw_symbols = df[0].dropna().astype(str).str.strip().tolist()
     except Exception as e:
         print(f"Error reading CSV file: {e}")
-        return []
+        is_scraping = False
+        return
 
-    data = []
-    for sym in raw_symbols:
-        if not sym:
-            continue
-        formatted_sym = sym if sym.endswith(".IS") else f"{sym}.IS"
+    symbols = [sym if sym.endswith(".IS") else f"{sym}.IS" for sym in raw_symbols if sym]
+    total = len(symbols)
+    print(f"Scraping fundamentals for {total} stocks from yfinance...")
+    
+    for i, sym in enumerate(symbols):
+        try:
+            ticker = yf.Ticker(sym)
+            info = ticker.info
+            
+            fk = info.get('trailingPE') or info.get('forwardPE')
+            pddd = info.get('priceToBook')
+            fd_favok = info.get('enterpriseToEbitda')
+            roe_raw = info.get('returnOnEquity')
+            roe = roe_raw * 100 if roe_raw is not None else None
+            
+            fk = round(float(fk), 2) if fk is not None else None
+            pddd = round(float(pddd), 2) if pddd is not None else None
+            fd_favok = round(float(fd_favok), 2) if fd_favok is not None else None
+            roe = round(float(roe), 2) if roe is not None else None
+            
+            conn = sqlite3.connect(DB_PATH)
+            c = conn.cursor()
+            c.execute("""
+                UPDATE fundamentals
+                SET fk = ?, pddd = ?, fd_favok = ?, roe = ?, last_updated = ?
+                WHERE symbol = ?
+            """, (fk, pddd, fd_favok, roe, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), sym))
+            conn.commit()
+            conn.close()
+            
+            if (i + 1) % 50 == 0:
+                print(f"Scraped fundamentals progress: {i+1}/{total} completed.")
+        except Exception as e:
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                c = conn.cursor()
+                c.execute("""
+                    UPDATE fundamentals
+                    SET last_updated = ?
+                    WHERE symbol = ?
+                """, (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), sym))
+                conn.commit()
+                conn.close()
+            except Exception:
+                pass
+            print(f"Error scraping fundamentals for {sym}: {e}")
+            
+        time.sleep(0.1)
         
-        # Generate realistic random values
-        fk = round(random.uniform(2.0, 20.0), 2)
-        pddd = round(random.uniform(0.5, 6.0), 2)
-        fd_favok = round(random.uniform(2.0, 15.0), 2)
-        roe = round(random.uniform(5.0, 50.0), 2)
-        data.append((formatted_sym, fk, pddd, fd_favok, roe))
-    return data
+    is_scraping = False
+    print("Background fundamentals scraping finished successfully.")
 
-def populate_sample_fundamentals():
+def trigger_background_scrape():
+    thread = threading.Thread(target=scrape_all_fundamentals_task)
+    thread.daemon = True
+    thread.start()
+
+def check_and_trigger_update():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM fundamentals")
     count = c.fetchone()[0]
+    
     if count < 500:
-        print(f"Wiping old fundamentals data (count={count}) and populating from shareCodes.csv...")
+        print(f"Initializing/Wiping fundamentals table. Current count={count}")
         c.execute("DELETE FROM fundamentals")
-        sample_data = load_symbols_and_generate_fundamentals()
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        for symbol, fk, pddd, fd_favok, roe in sample_data:
-            c.execute("""
-                INSERT OR REPLACE INTO fundamentals (symbol, fk, pddd, fd_favok, roe, last_updated)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (symbol, fk, pddd, fd_favok, roe, now))
-        conn.commit()
+        csv_path = get_csv_path()
+        if os.path.exists(csv_path):
+            try:
+                df = pd.read_csv(csv_path, header=None)
+                raw_symbols = df[0].dropna().astype(str).str.strip().tolist()
+                placeholder_time = '1970-01-01 00:00:00'
+                for sym in raw_symbols:
+                    if not sym:
+                        continue
+                    formatted_sym = sym if sym.endswith(".IS") else f"{sym}.IS"
+                    c.execute("""
+                        INSERT OR REPLACE INTO fundamentals (symbol, fk, pddd, fd_favok, roe, last_updated)
+                        VALUES (?, NULL, NULL, NULL, NULL, ?)
+                    """, (formatted_sym, placeholder_time))
+                conn.commit()
+                print(f"Inserted placeholders for {len(raw_symbols)} symbols.")
+            except Exception as e:
+                print(f"Error seeding database placeholders: {e}")
+                
+    c.execute("SELECT MIN(last_updated) FROM fundamentals")
+    oldest_str = c.fetchone()[0]
     conn.close()
-
-def update_fundamentals_job():
-    print("APScheduler job running: updating fundamentals...")
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    sample_data = load_symbols_and_generate_fundamentals()
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    for symbol, fk, pddd, fd_favok, roe in sample_data:
-        c.execute("""
-            INSERT OR REPLACE INTO fundamentals (symbol, fk, pddd, fd_favok, roe, last_updated)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (symbol, fk, pddd, fd_favok, roe, now))
-    conn.commit()
-    conn.close()
-    print("APScheduler job finished.")
+    
+    needs_update = False
+    if oldest_str is None:
+        needs_update = True
+    else:
+        try:
+            oldest_dt = datetime.strptime(oldest_str, "%Y-%m-%d %H:%M:%S")
+            if datetime.now() - oldest_dt > timedelta(hours=24):
+                needs_update = True
+        except Exception:
+            needs_update = True
+            
+    if needs_update:
+        print("Database cache is outdated (older than 24h) or unpopulated. Triggering background scrape...")
+        trigger_background_scrape()
+    else:
+        print("Database cache is fresh (less than 24h old). No update required.")
 
 scheduler = BackgroundScheduler()
 
 @app.on_event("startup")
 def start_scheduler():
     init_db()
-    populate_sample_fundamentals()
-    scheduler.add_job(update_fundamentals_job, 'cron', hour=18, minute=30)
+    check_and_trigger_update()
+    scheduler.add_job(trigger_background_scrape, 'cron', hour=18, minute=30)
     scheduler.start()
     print("Background scheduler started successfully.")
 
@@ -211,6 +283,9 @@ async def run_screener(
 ):
     try:
         start_date_str = get_start_date(period, custom_date)
+        
+        # Check and trigger background update if cache has expired (24h)
+        check_and_trigger_update()
         
         # Get stock fundamentals from DB
         conn = sqlite3.connect(DB_PATH)
