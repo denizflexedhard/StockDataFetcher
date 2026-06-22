@@ -219,20 +219,28 @@ def check_and_trigger_update():
             except Exception as e:
                 print(f"Error seeding database placeholders: {e}")
                 
-    c.execute("SELECT MAX(last_updated) FROM fundamentals")
-    latest_str = c.fetchone()[0]
-    conn.close()
+    # Check if there are any unpopulated placeholders (never successfully scraped or retried)
+    c.execute("SELECT COUNT(*) FROM fundamentals WHERE last_updated = '1970-01-01 00:00:00'")
+    unpopulated_count = c.fetchone()[0]
     
     needs_update = False
-    if latest_str is None or latest_str == '1970-01-01 00:00:00':
+    if unpopulated_count > 0:
         needs_update = True
+        print(f"Found {unpopulated_count} unpopulated stock placeholders in database.")
     else:
-        try:
-            latest_dt = datetime.strptime(latest_str, "%Y-%m-%d %H:%M:%S")
-            if datetime.now() - latest_dt > timedelta(hours=24):
-                needs_update = True
-        except Exception:
+        # If all are populated, check the age of the oldest cache entry
+        c.execute("SELECT MIN(last_updated) FROM fundamentals")
+        oldest_str = c.fetchone()[0]
+        if oldest_str is None:
             needs_update = True
+        else:
+            try:
+                oldest_dt = datetime.strptime(oldest_str, "%Y-%m-%d %H:%M:%S")
+                if datetime.now() - oldest_dt > timedelta(hours=24):
+                    needs_update = True
+            except Exception:
+                needs_update = True
+    conn.close()
             
     if needs_update:
         print("Database cache is outdated (older than 24h) or unpopulated. Triggering background scrape...")
