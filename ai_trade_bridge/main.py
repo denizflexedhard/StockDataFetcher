@@ -10,8 +10,20 @@ import os
 import random
 import threading
 import time
+import math
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
+
+def clean_float(val):
+    if val is None:
+        return None
+    try:
+        fval = float(val)
+        if math.isinf(fval) or math.isnan(fval):
+            return None
+        return fval
+    except (ValueError, TypeError):
+        return None
 
 app = FastAPI(title="AI Trade Bridge API")
 
@@ -135,10 +147,15 @@ def scrape_all_fundamentals_task():
             roe_raw = info.get('returnOnEquity')
             roe = roe_raw * 100 if roe_raw is not None else None
             
-            fk = round(float(fk), 2) if fk is not None else None
-            pddd = round(float(pddd), 2) if pddd is not None else None
-            fd_favok = round(float(fd_favok), 2) if fd_favok is not None else None
-            roe = round(float(roe), 2) if roe is not None else None
+            fk = clean_float(fk)
+            pddd = clean_float(pddd)
+            fd_favok = clean_float(fd_favok)
+            roe = clean_float(roe)
+            
+            if fk is not None: fk = round(fk, 2)
+            if pddd is not None: pddd = round(pddd, 2)
+            if fd_favok is not None: fd_favok = round(fd_favok, 2)
+            if roe is not None: roe = round(roe, 2)
             
             conn = sqlite3.connect(DB_PATH)
             c = conn.cursor()
@@ -391,6 +408,10 @@ async def run_screener(
         
         results = []
         for symbol, fk, pddd, fd_favok, roe, last_updated in rows:
+            fk = clean_float(fk)
+            pddd = clean_float(pddd)
+            fd_favok = clean_float(fd_favok)
+            roe = clean_float(roe)
             try:
                 if symbol not in df_close.columns:
                     continue
@@ -576,8 +597,9 @@ async def generate_json(
         def get_val(r, col_name):
             if col_name in df.columns:
                 v = r[col_name]
-                if pd.notna(v):
-                    return round(float(v), 2)
+                cleaned = clean_float(v)
+                if cleaned is not None:
+                    return round(cleaned, 2)
             return None
 
         for index, row in df.iterrows():
