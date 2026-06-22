@@ -87,11 +87,41 @@ def scrape_all_fundamentals_task():
         is_scraping = False
         return
 
-    symbols = [sym if sym.endswith(".IS") else f"{sym}.IS" for sym in raw_symbols if sym]
-    total = len(symbols)
-    print(f"Scraping fundamentals for {total} stocks from yfinance...")
+    csv_symbols = [sym if sym.endswith(".IS") else f"{sym}.IS" for sym in raw_symbols if sym]
     
-    for i, sym in enumerate(symbols):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    
+    # 1. Insert placeholders for any symbols in CSV that are not in DB
+    placeholder_time = '1970-01-01 00:00:00'
+    for sym in csv_symbols:
+        c.execute("INSERT OR IGNORE INTO fundamentals (symbol, last_updated) VALUES (?, ?)", (sym, placeholder_time))
+    
+    # 2. Delete any symbols in DB that are no longer in CSV
+    c.execute("SELECT symbol FROM fundamentals")
+    db_symbols = [row[0] for row in c.fetchall()]
+    csv_set = set(csv_symbols)
+    for sym in db_symbols:
+        if sym not in csv_set:
+            c.execute("DELETE FROM fundamentals WHERE symbol = ?", (sym,))
+            
+    conn.commit()
+    
+    # 3. Select only the symbols that are outdated (older than 24 hours) or haven't been successfully scraped yet
+    outdated_time = (datetime.now() - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
+    c.execute("SELECT symbol FROM fundamentals WHERE last_updated < ?", (outdated_time,))
+    symbols_to_scrape = [row[0] for row in c.fetchall()]
+    conn.close()
+    
+    total = len(symbols_to_scrape)
+    if total == 0:
+        print("All fundamentals are up-to-date. No scraping needed.")
+        is_scraping = False
+        return
+        
+    print(f"Scraping fundamentals for {total} outdated/unpopulated stocks from yfinance...")
+    
+    for i, sym in enumerate(symbols_to_scrape):
         try:
             ticker = yf.Ticker(sym)
             info = ticker.info
@@ -117,9 +147,19 @@ def scrape_all_fundamentals_task():
             conn.commit()
             conn.close()
             
-            if (i + 1) % 50 == 0:
+            if (i + 1) % 10 == 0:
                 print(f"Scraped fundamentals progress: {i+1}/{total} completed.")
+                
         except Exception as e:
+            err_msg = str(e)
+            print(f"Error scraping fundamentals for {sym}: {err_msg}")
+            
+            # If we hit a rate limit, abort immediately to respect the provider
+            if "Too Many Requests" in err_msg or "Rate limited" in err_msg or "429" in err_msg:
+                print("Rate limit detected! Aborting background scraping task to respect API limits.")
+                break
+                
+            # For other errors (like 404), update timestamp so we don't retry endlessly
             try:
                 conn = sqlite3.connect(DB_PATH)
                 c = conn.cursor()
@@ -132,12 +172,11 @@ def scrape_all_fundamentals_task():
                 conn.close()
             except Exception:
                 pass
-            print(f"Error scraping fundamentals for {sym}: {e}")
             
-        time.sleep(0.1)
+        time.sleep(0.5)
         
     is_scraping = False
-    print("Background fundamentals scraping finished successfully.")
+    print("Background fundamentals scraping finished.")
 
 def trigger_background_scrape():
     thread = threading.Thread(target=scrape_all_fundamentals_task)
