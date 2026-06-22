@@ -150,14 +150,22 @@ def check_and_trigger_update():
     c.execute("SELECT COUNT(*) FROM fundamentals")
     count = c.fetchone()[0]
     
-    if count < 500:
-        print(f"Initializing/Wiping fundamentals table. Current count={count}")
+    csv_path = get_csv_path()
+    csv_len = 0
+    raw_symbols = []
+    if os.path.exists(csv_path):
+        try:
+            df = pd.read_csv(csv_path, header=None)
+            raw_symbols = df[0].dropna().astype(str).str.strip().tolist()
+            csv_len = len(raw_symbols)
+        except Exception:
+            pass
+            
+    if count < 500 or count != csv_len:
+        print(f"Initializing/Wiping fundamentals table. Current count={count}, CSV count={csv_len}")
         c.execute("DELETE FROM fundamentals")
-        csv_path = get_csv_path()
-        if os.path.exists(csv_path):
+        if raw_symbols:
             try:
-                df = pd.read_csv(csv_path, header=None)
-                raw_symbols = df[0].dropna().astype(str).str.strip().tolist()
                 placeholder_time = '1970-01-01 00:00:00'
                 for sym in raw_symbols:
                     if not sym:
