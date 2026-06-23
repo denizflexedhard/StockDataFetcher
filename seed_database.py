@@ -108,7 +108,7 @@ def main():
             ticker = yf.Ticker(sym)
             info = ticker.info
             
-            fk = info.get('trailingPE') or info.get('forwardPE')
+            fk = info.get('trailingPE')
             pddd = info.get('priceToBook')
             fd_favok = info.get('enterpriseToEbitda')
             roe_raw = info.get('returnOnEquity')
