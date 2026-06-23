@@ -287,39 +287,87 @@ def calculate_opportunity_score(fk: float, pddd: float, fd_favok: float, roe: fl
     score = 0
     # P/E Ratio (F/K) (Max 25 Points)
     if fk is not None:
-        if 0 <= fk <= 6:
+        if 0.1 <= fk <= 3.0:
             score += 25
-        elif 6.01 <= fk <= 10:
-            score += 15
-        elif 10.01 <= fk <= 15:
-            score += 5
+        elif 3.0 < fk <= 4.5:
+            score += 22
+        elif 4.5 < fk <= 6.0:
+            score += 19
+        elif 6.0 < fk <= 7.5:
+            score += 16
+        elif 7.5 < fk <= 9.0:
+            score += 13
+        elif 9.0 < fk <= 11.0:
+            score += 10
+        elif 11.0 < fk <= 14.0:
+            score += 7
+        elif 14.0 < fk <= 18.0:
+            score += 4
+        elif 18.0 < fk <= 25.0:
+            score += 1
             
     # P/B Ratio (PD/DD) (Max 25 Points)
     if pddd is not None:
-        if 0 <= pddd <= 1.5:
+        if 0.1 <= pddd <= 0.5:
             score += 25
-        elif 1.51 <= pddd <= 3:
-            score += 15
-        elif 3.01 <= pddd <= 5:
-            score += 5
+        elif 0.5 < pddd <= 0.8:
+            score += 22
+        elif 0.8 < pddd <= 1.2:
+            score += 19
+        elif 1.2 < pddd <= 1.6:
+            score += 16
+        elif 1.6 < pddd <= 2.2:
+            score += 13
+        elif 2.2 < pddd <= 3.0:
+            score += 10
+        elif 3.0 < pddd <= 4.0:
+            score += 7
+        elif 4.0 < pddd <= 5.5:
+            score += 4
+        elif 5.5 < pddd <= 8.0:
+            score += 1
             
     # EV/EBITDA (FD/FAVÖK) (Max 25 Points)
     if fd_favok is not None:
-        if 0 <= fd_favok <= 5:
+        if 0.1 <= fd_favok <= 3.0:
             score += 25
-        elif 5.01 <= fd_favok <= 8:
-            score += 15
-        elif 8.01 <= fd_favok <= 12:
-            score += 5
+        elif 3.0 < fd_favok <= 4.5:
+            score += 22
+        elif 4.5 < fd_favok <= 6.0:
+            score += 19
+        elif 6.0 < fd_favok <= 7.5:
+            score += 16
+        elif 7.5 < fd_favok <= 9.0:
+            score += 13
+        elif 9.0 < fd_favok <= 11.0:
+            score += 10
+        elif 11.0 < fd_favok <= 14.0:
+            score += 7
+        elif 14.0 < fd_favok <= 18.0:
+            score += 4
+        elif 18.0 < fd_favok <= 22.0:
+            score += 1
             
     # ROE (Return on Equity) (Max 25 Points)
     if roe is not None:
-        if roe >= 35:
+        if roe >= 50.0:
             score += 25
-        elif 20 <= roe < 35:
-            score += 15
-        elif 10 <= roe < 20:
-            score += 5
+        elif 40.0 <= roe < 50.0:
+            score += 22
+        elif 30.0 <= roe < 40.0:
+            score += 19
+        elif 25.0 <= roe < 30.0:
+            score += 16
+        elif 20.0 <= roe < 25.0:
+            score += 13
+        elif 15.0 <= roe < 20.0:
+            score += 10
+        elif 10.0 <= roe < 15.0:
+            score += 7
+        elif 5.0 <= roe < 10.0:
+            score += 4
+        elif 0.1 <= roe < 5.0:
+            score += 1
             
     return score
 
