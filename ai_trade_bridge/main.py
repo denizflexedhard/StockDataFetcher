@@ -506,6 +506,7 @@ async def run_screener(
         return JSONResponse(status_code=500, content={"hata": str(e)})
 
 @app.get("/", response_class=HTMLResponse)
+@app.head("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
