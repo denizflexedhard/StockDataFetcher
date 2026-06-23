@@ -14,6 +14,8 @@
         rel="stylesheet">
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SheetJS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <style>
         body {
@@ -406,16 +408,23 @@
                                     getirisi &lt; endeks getirisi) ve AI Opportunity Score hesabı yapılmış şirketler.
                                 </p>
                             </div>
-                            <!-- Sort dropdown -->
-                            <div class="flex items-center gap-2 shrink-0">
-                                <label for="screener-sort"
-                                    class="text-xs text-slate-400 font-bold whitespace-nowrap uppercase tracking-wider">Sıralama:</label>
-                                <select id="screener-sort" onchange="sortScreenerResults(this.value)"
-                                    class="bg-slate-800 border border-slate-750/90 rounded-xl text-xs py-2 px-3 text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold cursor-pointer">
-                                    <option value="score">AI Opportunity Score (Yüksekten Düşüğe)</option>
-                                    <option value="fk">P/E (F/K) (Düşükten Yükseğe)</option>
-                                    <option value="fd_favok">EV/EBITDA (FD/FAVÖK) (Düşükten Yükseğe)</option>
-                                </select>
+                            <!-- Sort dropdown & Download Button -->
+                            <div class="flex flex-wrap items-center gap-3 shrink-0">
+                                <div class="flex items-center gap-2">
+                                    <label for="screener-sort"
+                                        class="text-xs text-slate-400 font-bold whitespace-nowrap uppercase tracking-wider">Sıralama:</label>
+                                    <select id="screener-sort" onchange="sortScreenerResults(this.value)"
+                                        class="bg-slate-800 border border-slate-750/90 rounded-xl text-xs py-2 px-3 text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold cursor-pointer">
+                                        <option value="score">AI Opportunity Score (Yüksekten Düşüğe)</option>
+                                        <option value="fk">P/E (F/K) (Düşükten Yükseğe)</option>
+                                        <option value="fd_favok">EV/EBITDA (FD/FAVÖK) (Düşükten Yükseğe)</option>
+                                    </select>
+                                </div>
+                                <button type="button" onclick="downloadScreenerExcel()"
+                                    class="bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/30 rounded-xl text-xs font-bold py-2 px-3 flex items-center gap-1.5 transition duration-200 cursor-pointer">
+                                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                    Excel İndir
+                                </button>
                             </div>
                         </div>
 
@@ -690,6 +699,33 @@
             }
 
             renderScreenerTable();
+        }
+
+        function downloadScreenerExcel() {
+            if (!currentScreenerData || !currentScreenerData.results || currentScreenerData.results.length === 0) {
+                alert("İndirilecek veri bulunamadı.");
+                return;
+            }
+
+            // Map results data to a clean format for Excel
+            const excelData = currentScreenerData.results.map(row => ({
+                "Hisse Kodu": row.symbol,
+                "AI Opportunity Score": row.score,
+                "Hisse Getirisi (%)": row.return,
+                "F/K (PE)": row.fk !== null && row.fk !== undefined ? row.fk : "-",
+                "PD/DD (PB)": row.pddd !== null && row.pddd !== undefined ? row.pddd : "-",
+                "FD/FAVÖK (EV/EBITDA)": row.fd_favok !== null && row.fd_favok !== undefined ? row.fd_favok : "-",
+                "ROE (%)": row.roe !== null && row.roe !== undefined ? row.roe : "-"
+            }));
+
+            // Create workbook and worksheet
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Filtrelenmiş Hisseler");
+
+            // Save the file
+            const fileName = `AI_Trade_Opportunity_Screener_${currentPeriod}.xlsx`;
+            XLSX.writeFile(wb, fileName);
         }
 
         // Module 1 Data Form submit handler (Keep original behavior)
